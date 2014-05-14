@@ -40,11 +40,13 @@ namespace SillyGame.Controller
 
         //The index of the Player One controller
         PlayerIndex mPlayerOne;
+        PlayerIndex mPlayerTwo;
 
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
-        Player player;
+        Player1 player1;
+        Player2 player2;
 
         // Keyboard states used to determine key presses
         KeyboardState currentKeyboardState;
@@ -53,8 +55,6 @@ namespace SillyGame.Controller
         // Gamepad states used to determine button presses
         GamePadState currentGamePadState;
         GamePadState previousGamePadState;
-        GamePadState currentGamePadThumbSticks;
-        GamePadState previousGamePadThumbSticks;
 
         // A movement speed for the player
         float playerMoveSpeed;
@@ -97,7 +97,7 @@ namespace SillyGame.Controller
         Song gameplayMusic;
 
         //Number that holds the player score
-        int score;
+        int score1;
 
         // The font used to display UI elements
         SpriteFont font;
@@ -120,7 +120,7 @@ namespace SillyGame.Controller
             explosions = new List<Animation>();
 
             //Set player's score to zero
-            score = 0;
+            score1 = 0;
 
             projectiles = new List<Projectile>();
 
@@ -143,7 +143,8 @@ namespace SillyGame.Controller
             bgLayer2 = new ParallaxingBackground();
 
             // Initialize the player class
-            player = new Player();
+            player1 = new Player1();
+            player2 = new Player2();
 
             // Set a constant player move speed
             playerMoveSpeed = 6.0f;
@@ -160,14 +161,23 @@ namespace SillyGame.Controller
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // Load the player resources
-            Animation playerAnimation = new Animation();
-            Texture2D playerTexture = Content.Load<Texture2D>("Sprites/shipAnimation");
-            playerAnimation.Initialize(playerTexture, Vector2.Zero, 115, 69, 8, 30, Color.White, 1f, true);
+            // Load the player1 resources
+            Animation player1Animation = new Animation();
+            Texture2D player1Texture = Content.Load<Texture2D>("Sprites/shipAnimation");
+            player1Animation.Initialize(player1Texture, Vector2.Zero, 115, 69, 8, 30, Color.White, 1f, true);
 
-            Vector2 playerPosition = new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y
+            Vector2 player1Position = new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y
             + GraphicsDevice.Viewport.TitleSafeArea.Height / 2);
-            player.Initialize(playerAnimation, playerPosition);
+            player1.Initialize(player1Animation, player1Position);
+
+            // Load the player2 resources
+            Animation player2Animation = new Animation();
+            Texture2D player2Texture = Content.Load<Texture2D>("Sprites/shipAnimation2");
+            player2Animation.Initialize(player2Texture, Vector2.Zero, 115, 69, 8, 30, Color.White, 1f, true);
+
+            Vector2 player2Position = new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y
+            + GraphicsDevice.Viewport.TitleSafeArea.Height / 2);
+            player2.Initialize(player2Animation, player2Position);
 
             //Load the screen backgrounds
             MainMenuScreenBackground = Content.Load<Texture2D>("Images/mainMenu");
@@ -279,7 +289,8 @@ namespace SillyGame.Controller
             else if (GameScreenShown == true)
             {
                 //Update the player
-                UpdatePlayer(gameTime);
+                UpdatePlayer1(gameTime);
+                UpdatePlayer2(gameTime);
 
 
                 // Update the parallaxing background
@@ -332,7 +343,8 @@ namespace SillyGame.Controller
                 GameOverScreenShown = false;
                 GameScreenShown = true;
                 MainMenuScreenShown = false;
-                player.Health = 100;
+                player1.Health = 100;
+                player2.Health = 100;
                 return;
             }
         }
@@ -348,14 +360,25 @@ namespace SillyGame.Controller
 
             for (int aPlayer = 0; aPlayer < 4; aPlayer++)
             {
-                if (player.Health <= 0)
+                if (player1.Health <= 0 )
                 {
                     mPlayerOne = (PlayerIndex)aPlayer;
-                    GameOverScreenShown = true;
-                    GameScreenShown = false;
-                    MainMenuScreenShown = false;
                     return;
                 }
+            }
+            for (int bPlayer = 0; bPlayer < 4; bPlayer++)
+            {
+                if (player2.Health <= 0)
+                {
+                    mPlayerTwo= (PlayerIndex)bPlayer;
+                    return;
+                }
+            }
+            if(player1.Health <= 0 || player2.Health <= 0)
+            {
+                MainMenuScreenShown = false;
+                GameScreenShown = false;
+                GameOverScreenShown = true;
             }
         }
 
@@ -363,7 +386,7 @@ namespace SillyGame.Controller
         {
             if (GamePad.GetState(mPlayerOne).Buttons.Start == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.M) == true)
             {
-                score = 0;
+                score1 = 0;
                 GameOverScreenShown = false;
                 GameScreenShown = false;
                 MainMenuScreenShown = true;
@@ -401,39 +424,75 @@ namespace SillyGame.Controller
             // determine if two objects are overlapping
             Rectangle rectangle1;
             Rectangle rectangle2;
+            Rectangle rectangle3;
 
             // Only create the rectangle once for the player
-            rectangle1 = new Rectangle((int)player.Position.X,
-            (int)player.Position.Y,
-            player.Width,
-            player.Height);
+            rectangle1 = new Rectangle((int)player1.Position.X,
+            (int)player1.Position.Y,
+            player1.Width,
+            player1.Height);
 
-            // Do the collision between the player and the enemies
+            rectangle2 = new Rectangle((int)player1.Position.X,
+            (int)player1.Position.Y,
+            player2.Width,
+            player2.Height);
+
+            // Do the collision between the player1 and the enemies
             for (int i = 0; i < enemies.Count; i++)
             {
-                rectangle2 = new Rectangle((int)enemies[i].Position.X,
+                rectangle3 = new Rectangle((int)enemies[i].Position.X,
                 (int)enemies[i].Position.Y,
                 enemies[i].Width,
                 enemies[i].Height);
 
                 // Determine if the two objects collided with each
                 // other
-                if (rectangle1.Intersects(rectangle2))
+                if (rectangle1.Intersects(rectangle3))
                 {
                     // Subtract the health from the player based on
                     // the enemy damage
-                    player.Health -= enemies[i].Damage;
+                    player1.Health -= enemies[i].Damage;
 
                     // Since the enemy collided with the player
                     // destroy it
                     enemies[i].Health = 0;
 
                     // If the player health is less than zero we died
-                    if (player.Health <= 0)
-                        player.Active = false;
+                    if (player1.Health <= 0)
+                        player1.Active = false;
                 }
 
+
             }
+
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                rectangle3 = new Rectangle((int)enemies[i].Position.X,
+                (int)enemies[i].Position.Y,
+                enemies[i].Width,
+                enemies[i].Height);
+
+                // Determine if the two objects collided with each
+                // other
+                if (rectangle2.Intersects(rectangle3))
+                {
+                    // Subtract the health from the player based on
+                    // the enemy damage
+                    player2.Health -= enemies[i].Damage;
+
+                    // Since the enemy collided with the player
+                    // destroy it
+                    enemies[i].Health = 0;
+
+                    // If the player health is less than zero we died
+                    if (player2.Health <= 0)
+                        player2.Active = false;
+                }
+
+
+            }
+
+
             // Projectile vs Enemy Collision
             for (int i = 0; i < projectiles.Count; i++)
             {
@@ -444,12 +503,12 @@ namespace SillyGame.Controller
                     projectiles[i].Width / 2, (int)projectiles[i].Position.Y -
                     projectiles[i].Height / 2, projectiles[i].Width, projectiles[i].Height);
 
-                    rectangle2 = new Rectangle((int)enemies[j].Position.X - enemies[j].Width / 2,
+                    rectangle3 = new Rectangle((int)enemies[j].Position.X - enemies[j].Width / 2,
                     (int)enemies[j].Position.Y - enemies[j].Height / 2,
                     enemies[j].Width, enemies[j].Height);
 
                     // Determine if the two objects collided with each other
-                    if (rectangle1.Intersects(rectangle2))
+                    if (rectangle1.Intersects(rectangle3))
                     {
                         enemies[j].Health -= projectiles[i].Damage;
                         projectiles[i].Active = false;
@@ -471,7 +530,7 @@ namespace SillyGame.Controller
         }
 
 
-        private void UpdateLeftStickDirection()
+        private void UpdateLeftStickDirection1()
         {
             double testY = currentGamePadState.ThumbSticks.Left.Y;
             double testX = currentGamePadState.ThumbSticks.Left.X;
@@ -585,72 +644,269 @@ namespace SillyGame.Controller
             }
         }
 
+        private void UpdateLeftStickDirection2()
+        {
+            double testY = currentGamePadState.ThumbSticks.Left.Y;
+            double testX = currentGamePadState.ThumbSticks.Left.X;
+
+            String thumbStickDirectionTester = "Is it working yet???";
+
+            if (GamePad.GetState(PlayerIndex.Two).ThumbSticks.Left.X >= 0.5f)
+            {
+                if (GamePad.GetState(PlayerIndex.Two).ThumbSticks.Left.Y >= 0.5f)
+                {
+                    N = false;
+                    NE = true;
+                    East = false;
+                    SE = false;
+                    South = false;
+                    SW = false;
+                    W = false;
+                    NW = false;
+                }
+                else if (GamePad.GetState(PlayerIndex.One).ThumbSticks.Left.Y <= -0.5f)
+                {
+                    N = false;
+                    NE = false;
+                    East = false;
+                    SE = true;
+                    South = false;
+                    SW = false;
+                    W = false;
+                    NW = false;
+                }
+                else
+                {
+                    N = false;
+                    NE = false;
+                    East = true;
+                    SE = false;
+                    South = false;
+                    SW = false;
+                    W = false;
+                    NW = false;
+                }
+            }
+            else if (GamePad.GetState(PlayerIndex.Two).ThumbSticks.Left.X <= -0.5f)
+            {
+                if (GamePad.GetState(PlayerIndex.Two).ThumbSticks.Left.Y >= 0.5f)
+                {
+                    N = false;
+                    NE = false;
+                    East = false;
+                    SE = false;
+                    South = false;
+                    SW = false;
+                    W = false;
+                    NW = true;
+                }
+                else if (GamePad.GetState(PlayerIndex.Two).ThumbSticks.Left.Y <= -0.5f)
+                {
+                    N = false;
+                    NE = false;
+                    East = false;
+                    SE = false;
+                    South = false;
+                    SW = true;
+                    W = false;
+                    NW = false;
+                }
+                else
+                {
+                    N = false;
+                    NE = false;
+                    East = false;
+                    SE = false;
+                    South = false;
+                    SW = false;
+                    W = true;
+                    NW = false;
+                }
+            }
+            else if (GamePad.GetState(PlayerIndex.Two).ThumbSticks.Left.Y >= 0.5f && (GamePad.GetState(PlayerIndex.Two).ThumbSticks.Left.X < 0.5f && GamePad.GetState(PlayerIndex.Two).ThumbSticks.Left.X > -0.5f))
+            {
+                N = true;
+                NE = false;
+                East = false;
+                SE = false;
+                South = false;
+                SW = false;
+                W = false;
+                NW = false;
+            }
+            else if (GamePad.GetState(PlayerIndex.Two).ThumbSticks.Left.Y <= -0.5f && (GamePad.GetState(PlayerIndex.Two).ThumbSticks.Left.X < 0.5f && GamePad.GetState(PlayerIndex.Two).ThumbSticks.Left.X > -0.5f))
+            {
+                N = false;
+                NE = false;
+                East = false;
+                SE = false;
+                South = true;
+                SW = false;
+                W = false;
+                NW = false;
+            }
+            else
+            {
+                N = false;
+                NE = false;
+                East = false;
+                SE = false;
+                South = false;
+                SW = false;
+                W = false;
+                NW = false;
+            }
+        }
+
         /// <summary>
         /// Updates the player based on the input from the user via gamepad or keyboard
         /// </summary>
         /// <param name="gameTime">The current time reference of the game</param>
-        private void UpdatePlayer(GameTime gameTime)
+        private void UpdatePlayer1(GameTime gameTime)
         {
-            player.Update(gameTime);
+            player1.Update(gameTime);
 
-            // Get Thumbstick Controls
-            player.Position.X += currentGamePadThumbSticks.ThumbSticks.Left.X * playerMoveSpeed;
-            player.Position.Y -= currentGamePadThumbSticks.ThumbSticks.Left.Y * playerMoveSpeed;
-
-            UpdateLeftStickDirection();
+            UpdateLeftStickDirection1();
 
             // Use the Keyboard / Thumbsticks / Dpad
             if (currentKeyboardState.IsKeyDown(Keys.A) ||
             W == true ||
             currentGamePadState.DPad.Left == ButtonState.Pressed)
             {
-                player.Position.X -= playerMoveSpeed;
+                player1.Position.X -= playerMoveSpeed;
             }
 
             if (currentKeyboardState.IsKeyDown(Keys.D) ||
             East == true ||
             currentGamePadState.DPad.Right == ButtonState.Pressed)
             {
-                player.Position.X += playerMoveSpeed;
+                player1.Position.X += playerMoveSpeed;
             }
 
             if (currentKeyboardState.IsKeyDown(Keys.W) ||
             N == true ||
             currentGamePadState.DPad.Up == ButtonState.Pressed)
             {
-                player.Position.Y -= playerMoveSpeed;
+                player1.Position.Y -= playerMoveSpeed;
             }
             if (NE == true)
             {
-                player.Position.Y -= playerMoveSpeed;
-                player.Position.X += playerMoveSpeed;
+                player1.Position.Y -= playerMoveSpeed;
+                player1.Position.X += playerMoveSpeed;
             }
             if (NW == true)
             {
-                player.Position.Y -= playerMoveSpeed;
-                player.Position.X -= playerMoveSpeed;
+                player1.Position.Y -= playerMoveSpeed;
+                player1.Position.X -= playerMoveSpeed;
             }
 
             if (currentKeyboardState.IsKeyDown(Keys.S) ||
             South == true ||
             currentGamePadState.DPad.Down == ButtonState.Pressed)
             {
-                player.Position.Y += playerMoveSpeed;
+                player1.Position.Y += playerMoveSpeed;
             }
             if (SE == true)
             {
-                player.Position.Y += playerMoveSpeed;
-                player.Position.X += playerMoveSpeed;
+                player1.Position.Y += playerMoveSpeed;
+                player1.Position.X += playerMoveSpeed;
             }
             if (SW == true)
             {
-                player.Position.Y += playerMoveSpeed;
-                player.Position.X -= playerMoveSpeed;
+                player1.Position.Y += playerMoveSpeed;
+                player1.Position.X -= playerMoveSpeed;
             }
 
             // Make sure that the player does not go out of bounds
-            player.Position.X = MathHelper.Clamp(player.Position.X, 0, GraphicsDevice.Viewport.Width - player.Width);
-            player.Position.Y = MathHelper.Clamp(player.Position.Y, 0, GraphicsDevice.Viewport.Height - player.Height);
+            player1.Position.X = MathHelper.Clamp(player1.Position.X, 0, GraphicsDevice.Viewport.Width - player1.Width);
+            player1.Position.Y = MathHelper.Clamp(player1.Position.Y, 0, GraphicsDevice.Viewport.Height - player1.Height);
+
+            if (currentKeyboardState.IsKeyDown(Keys.Space) || currentGamePadState.Buttons.LeftShoulder == ButtonState.Pressed)
+            {
+
+                // Fire only every interval we set as the fireTime
+                if (gameTime.TotalGameTime - previousFireTime > fireTime)
+                {
+                    // Reset our current time
+                    previousFireTime = gameTime.TotalGameTime;
+
+                    // Add the projectile, but add it to the front and center of the player
+                    AddProjectile(player1.Position + new Vector2(player1.Width / 2, 0));
+
+                    // Play the laser sound
+                    laserSound.Play();
+
+
+                    // If the Players health reaches 0 then deactivate it
+                    if (player1.Health <= 0)
+                    {
+                        // By setting the Active flag to false, the game will remove this objet fromthe 
+                        // active game list
+                        player1.Active = false;
+                    }
+
+                }
+            }
+        }
+
+        private void UpdatePlayer2(GameTime gameTime)
+        {
+            player2.Update(gameTime);
+
+            UpdateLeftStickDirection2();
+
+            // Use the Keyboard / Thumbsticks / Dpad
+            if (currentKeyboardState.IsKeyDown(Keys.Left) ||
+            W == true ||
+            currentGamePadState.DPad.Left == ButtonState.Pressed)
+            {
+                player2.Position.X -= playerMoveSpeed;
+            }
+
+            if (currentKeyboardState.IsKeyDown(Keys.Right) ||
+            East == true ||
+            currentGamePadState.DPad.Right == ButtonState.Pressed)
+            {
+                player2.Position.X += playerMoveSpeed;
+            }
+
+            if (currentKeyboardState.IsKeyDown(Keys.Up) ||
+            N == true ||
+            currentGamePadState.DPad.Up == ButtonState.Pressed)
+            {
+                player2.Position.Y -= playerMoveSpeed;
+            }
+            if (NE == true)
+            {
+                player2.Position.Y -= playerMoveSpeed;
+                player2.Position.X += playerMoveSpeed;
+            }
+            if (NW == true)
+            {
+                player2.Position.Y -= playerMoveSpeed;
+                player2.Position.X -= playerMoveSpeed;
+            }
+
+            if (currentKeyboardState.IsKeyDown(Keys.Down) ||
+            South == true ||
+            currentGamePadState.DPad.Down == ButtonState.Pressed)
+            {
+                player2.Position.Y += playerMoveSpeed;
+            }
+            if (SE == true)
+            {
+                player2.Position.Y += playerMoveSpeed;
+                player2.Position.X += playerMoveSpeed;
+            }
+            if (SW == true)
+            {
+                player2.Position.Y += playerMoveSpeed;
+                player2.Position.X -= playerMoveSpeed;
+            }
+
+            // Make sure that the player does not go out of bounds
+            player2.Position.X = MathHelper.Clamp(player2.Position.X, 0, GraphicsDevice.Viewport.Width - player2.Width);
+            player2.Position.Y = MathHelper.Clamp(player2.Position.Y, 0, GraphicsDevice.Viewport.Height - player2.Height);
 
             if (currentKeyboardState.IsKeyDown(Keys.Space) || currentGamePadState.Buttons.LeftShoulder == ButtonState.Pressed)
             {
@@ -662,24 +918,22 @@ namespace SillyGame.Controller
                     previousFireTime = gameTime.TotalGameTime;
 
                     // Add the projectile, but add it to the front and center of the player
-                    AddProjectile(player.Position + new Vector2(player.Width / 2, 0));
+                    AddProjectile(player2.Position + new Vector2(player2.Width / 2, 0));
 
                     // Play the laser sound
                     laserSound.Play();
 
 
-                    // If the Player is past the screen or its health reaches 0 then deactivate it
-                    if (player.Health <= 0)
+                    // If the Players health reaches 0 then deactivate it
+                    if (player2.Health <= 0)
                     {
                         // By setting the Active flag to false, the game will remove this objet fromthe 
                         // active game list
-                        player.Active = false;
+                        player2.Active = false;
                     }
 
                 }
             }
-
-
 
 
         }
@@ -713,7 +967,7 @@ namespace SillyGame.Controller
                         explosionSound.Play();
 
                         //Add to the player's score
-                        score += enemies[i].Value;
+                        score1 += enemies[i].Value;
                     }
                     enemies.RemoveAt(i);
                 }
@@ -771,14 +1025,15 @@ namespace SillyGame.Controller
                 }
 
                 // Draw the Player
-                player.Draw(spriteBatch);
+                player2.Draw(spriteBatch);
+                player1.Draw(spriteBatch);
 
             }
             else if (GameOverScreenShown)
             {
                 DrawGameOverScreen();
                 // Draw the score
-                spriteBatch.DrawString(font, "Score: " + score, new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X + 350, GraphicsDevice.Viewport.TitleSafeArea.Y + 200), Color.White);
+                spriteBatch.DrawString(font, "Score: " + score1, new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X + 350, GraphicsDevice.Viewport.TitleSafeArea.Y + 200), Color.White);
             }
 
 
@@ -786,9 +1041,10 @@ namespace SillyGame.Controller
             if (GameScreenShown == true)
             {
                 // Draw the score
-                spriteBatch.DrawString(font, "Score: " + score, new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y), Color.White);
+                spriteBatch.DrawString(font, "Score: " + score1, new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y), Color.White);
                 // Draw the player health
-                spriteBatch.DrawString(font, "Health: " + player.Health, new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y + 30), Color.White);
+                spriteBatch.DrawString(font, "Player1 Health: " + player1.Health, new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y + 30), Color.White);
+                spriteBatch.DrawString(font, "Player2 Health: " + player2.Health, new Vector2(GraphicsDevice.Viewport.TitleSafeArea.X, GraphicsDevice.Viewport.TitleSafeArea.Y + 60), Color.White);
             }
 
             // Stop drawing
